@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import './pages/index.dart';
 import './pages/user.dart';
+import './pages/chat.dart';
 import './pages/components/avatar.dart';
 
 void main() => runApp(new MyApp());
@@ -18,7 +19,8 @@ class MyApp extends StatelessWidget {
       initialRoute: '/',
       routes: {
         '/': (context) => new MyHomePage(title: '主页'),
-        '/user': (context) => new UserPage()
+        '/user': (context) => new UserPage(),
+        '/chat': (context) => new ChatPage()
       },
     );
   }
@@ -68,12 +70,9 @@ class _MyHomePageState extends State<MyHomePage> {
             )
           ),
           actions: <Widget>[
-            new InkWell(
-              onTap: () {},
-              child: new Container(
-                padding: EdgeInsets.only(left: 20.0, right: 20.0),
-                child: new Icon(Icons.search),
-              ),
+            new FlatButton(
+              onPressed: () {},
+              child: new Icon(Icons.search, color: Colors.white,),
             )
           ],
           bottom: new TabBar(

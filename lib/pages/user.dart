@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import './components/avatar.dart';
+import 'package:share/share.dart';
 
 class UserPage extends StatefulWidget {
   UserPage({Key key}) : super(key: key);
@@ -16,7 +17,7 @@ class _UserPageState extends State<UserPage> {
         padding: EdgeInsets.all(10.0),
         decoration: new BoxDecoration(
             border:
-                Border(bottom: BorderSide(width: 1.0, color: Colors.black12))),
+                Border(bottom: BorderSide(width: 0.5, color: Colors.black12))),
         child: new ListTile(
           leading: icon,
           title: new DefaultTextStyle(
@@ -24,7 +25,7 @@ class _UserPageState extends State<UserPage> {
             child: new Text(name),
           ),
           subtitle: new DefaultTextStyle(
-            style: new TextStyle(fontSize: 24.0, color: Colors.black),
+            style: new TextStyle(fontSize: 20.0, color: Colors.black54),
             child: new Text(value),
           ),
         ),
@@ -39,6 +40,14 @@ class _UserPageState extends State<UserPage> {
     AppBar appBar = new AppBar(
         title: new Text("个人主页"),
         elevation: 1.0,
+        actions: <Widget>[
+          new FlatButton(
+            onPressed: () {
+              Share.share("来试试洞见密信吧，超安全的p2p聊天应用哦！我的洞见id：sfsdfdss，复制后打开洞见密信，就能加我为好友哦~");
+            },
+            child: new Icon(Icons.share, color: Colors.white,),
+          )
+        ],
         bottom: PreferredSize(
             preferredSize: const Size.fromHeight(appBarHeight),
             child: new Container(
@@ -62,10 +71,10 @@ class _UserPageState extends State<UserPage> {
             body: new ListView(
               children: <Widget>[
                 this.buildInfoList(
-                    "电话",
-                    "123412312",
+                    "邮箱",
+                    "1234@qq.com",
                     new Icon(
-                      Icons.phone,
+                      Icons.alternate_email,
                       size: 30.0,
                     )),
                 this.buildInfoList(
@@ -88,7 +97,9 @@ class _UserPageState extends State<UserPage> {
           right: 30.0,
           top: appBar.preferredSize.height - 5,
           child: new FloatingActionButton(
-            onPressed: () {},
+            onPressed: () {
+              Navigator.pushNamed(context, "/chat");
+            },
             backgroundColor: Colors.white,
             elevation: 1.0,
             child: new Icon(

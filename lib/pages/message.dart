@@ -13,11 +13,11 @@ class MessagePage extends StatefulWidget {
 
 class _MessagePageState extends State<MessagePage> {
   List<MessageModel> messages = [
-    new MessageModel("123", "许启迪", "吃饭了没吃饭了没吃饭了没吃饭了没吃饭了没吃饭了没吃饭了没吃饭了没吃饭了没吃饭了没吃饭了没", "一小时前", "default"),
-    new MessageModel("123", "许启迪", "吃饭了没", "一小时前", "default"),
-    new MessageModel("123", "许启迪", "吃饭了没", "一小时前", "default"),
-    new MessageModel("123", "许启迪", "吃饭了没", "一小时前", "default"),
-    new MessageModel("123", "许启迪", "吃饭了没", "一小时前", "default"),
+    new MessageModel("123", "许启迪", "吃饭了没吃饭了没吃饭了没吃饭了没吃饭了没吃饭了没吃饭了没吃饭了没吃饭了没吃饭了没吃饭了没", "一小时前", "default", "", ""),
+    new MessageModel("123", "许启迪", "吃饭了没", "一小时前", "default", "", ""),
+    new MessageModel("123", "许启迪", "吃饭了没", "一小时前", "default", "", ""),
+    new MessageModel("123", "许启迪", "吃饭了没", "一小时前", "default", "", ""),
+    new MessageModel("123", "许启迪", "吃饭了没", "一小时前", "default", "", ""),
   ];
 
   int count = 1;
@@ -47,7 +47,7 @@ class _MessagePageState extends State<MessagePage> {
               c.close();
             } catch (e) {
             }
-            this.addMessage(new MessageModel("123", "许启迪$count", "吃饭了没", "一小时前", "default"));
+            Navigator.pushNamed(context, '/chat');
           },
           onLongPress: () {
             PersistentBottomSheetController c = showBottomSheet(
