@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 import '../utils/api.dart';
 import '../utils/navigate.dart';
 
@@ -149,6 +151,8 @@ class _LoginPageState extends State<LoginPage> {
                   }
                   print(res);
                   if (res['success']) {
+                    final prefs = await SharedPreferences.getInstance();
+                    prefs.setString('user', jsonEncode(res));
                     redirectTo(context, '/home', res);
                   }
                   setProcessing(false);
