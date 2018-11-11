@@ -3,7 +3,9 @@ import './components/avatar.dart';
 import 'package:share/share.dart';
 
 class UserPage extends StatefulWidget {
-  UserPage({Key key}) : super(key: key);
+  UserPage({Key key, this.params}) : super(key: key);
+
+  final Map params;
 
   @override
   _UserPageState createState() => new _UserPageState();

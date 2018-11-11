@@ -4,7 +4,9 @@ import './components/avatar.dart';
 import '../models/common_models.dart';
 
 class ChatPage extends StatefulWidget {
-  ChatPage({Key key}) : super(key: key);
+  ChatPage({Key key, this.params}) : super(key: key);
+
+  final Map params;
 
   @override
   _ChatPageState createState() => new _ChatPageState();

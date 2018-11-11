@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../utils/api.dart';
+import '../utils/navigate.dart';
 
 class LoginPage extends StatefulWidget {
   LoginPage({Key key}) : super(key: key);
@@ -17,6 +19,12 @@ class _LoginPageState extends State<LoginPage> {
   TextEditingController pwdConfirmController = new TextEditingController();
 
   List<Widget> buildForm() {
+    final errorStyle = new TextStyle(
+      fontSize: 12.0,
+      color: Colors.blueGrey
+    );
+
+
     TextFormField user = new TextFormField(
       validator: (v) {
         if (v.isEmpty) {
@@ -27,6 +35,7 @@ class _LoginPageState extends State<LoginPage> {
       decoration: new InputDecoration(
         hintText: "您的用户名",
         labelText: "用户名",
+        errorStyle: errorStyle,
         prefixIcon: new Icon(
           Icons.person,
           size: 30.0,
@@ -44,6 +53,7 @@ class _LoginPageState extends State<LoginPage> {
       decoration: new InputDecoration(
         hintText: "在这里输入密码",
         labelText: "密码",
+        errorStyle: errorStyle,
         prefixIcon: new Icon(
           Icons.security,
           size: 30.0,
@@ -61,6 +71,7 @@ class _LoginPageState extends State<LoginPage> {
       decoration: new InputDecoration(
         hintText: "重复您的密码",
         labelText: "确认密码",
+        errorStyle: errorStyle,
         prefixIcon: new Icon(
           Icons.verified_user,
           size: 30.0,
@@ -89,14 +100,17 @@ class _LoginPageState extends State<LoginPage> {
       statusBarColor: Colors.blueGrey,
     ));
     return new Scaffold(
+      backgroundColor: Colors.white,
       body: new ListView(
         children: <Widget>[
           new Container(
               height: 300.0,
               decoration: new BoxDecoration(
-                image: new DecorationImage(
-                    image: new AssetImage("images/login-bg.jpg"),
-                    fit: BoxFit.cover),
+                gradient: new LinearGradient(
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                  colors: [Colors.white, Colors.blueGrey]
+                ),
               ),
               child: new Column(
                 children: <Widget>[
@@ -106,14 +120,13 @@ class _LoginPageState extends State<LoginPage> {
                         padding: EdgeInsets.only(top: 180.0, left: 20.0),
                         child: new DefaultTextStyle(
                           style: new TextStyle(
-                              fontSize: 35.0, color: Colors.white),
+                              fontSize: 35.0, color: Colors.blueGrey),
                           child: new Text("欢迎，\n开始您的新旅程吧"),
                         ),
                       ))
                 ],
               )),
           new Container(
-            color: Colors.white,
             child: new Padding(
               padding: EdgeInsets.all(15.0),
               child: new Form(
@@ -123,11 +136,22 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
           new Padding(
-            padding: EdgeInsets.only(top: 40.0, left: 15.0, right: 15.0),
+            padding: EdgeInsets.only(top: 20.0, left: 15.0, right: 15.0),
             child: new RaisedButton(
-              onPressed: () {
-                if(formKey.currentState.validate()) {
-                  setProcessing(!isProcessing);
+              onPressed: () async {
+                if(formKey.currentState.validate() && !isProcessing) {
+                  setProcessing(true);
+                  var res;
+                  if(isLogin) {
+                    res = await login(userController.text, pwdController.text);
+                  } else {
+                    res = await signin(userController.text, pwdController.text);
+                  }
+                  print(res);
+                  if (res['success']) {
+                    redirectTo(context, '/home', res);
+                  }
+                  setProcessing(false);
                 }
               },
               color: Colors.blueGrey,

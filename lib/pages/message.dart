@@ -3,7 +3,9 @@ import '../models/common_models.dart';
 import './components/avatar.dart';
 
 class MessagePage extends StatefulWidget {
-  MessagePage({ Key key }) : super(key: key);
+  MessagePage({ Key key, this.params }) : super(key: key);
+
+  final Map params;
 
   @override
   _MessagePageState createState() => new _MessagePageState();

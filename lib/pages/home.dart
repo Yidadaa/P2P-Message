@@ -20,7 +20,9 @@ List<TabWithName> tabs = [
 ];
 
 class MyHomePage extends StatefulWidget {
-  MyHomePage({Key key}) : super(key: key);
+  MyHomePage({Key key, this.params}) : super(key: key);
+
+  final Map params;
 
   @override
   _MyHomePageState createState() => new _MyHomePageState();
