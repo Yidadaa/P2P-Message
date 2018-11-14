@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 import './message.dart';
 import './contacts.dart';
 import './components/avatar.dart';
+import '../utils/navigate.dart';
 
 class TabWithName {
   Tab tab;
@@ -28,7 +31,23 @@ class MyHomePage extends StatefulWidget {
   _MyHomePageState createState() => new _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
+  Map userProfile;
+
+  @override
+  void initState() {
+    SharedPreferences.getInstance().then((prefs) {
+      String userProfileStr = prefs.getString('user');
+      if (userProfileStr == null) redirectTo(context, '/login', null);
+      else {
+        setState(() {
+          Map userProfileJson = jsonDecode(userProfileStr);
+          userProfile = userProfileJson.containsKey('user') ? userProfileJson['user'] : userProfileJson;
+          print(userProfile);
+        });
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +61,7 @@ class _MyHomePageState extends State<MyHomePage> {
               fontSize: 16.0,
               color: Colors.white
             ),
-            child: new Text("益达大西瓜"),
+            child: Text(userProfile == null ? '加载中' : userProfile['name']),
           ),
           titleSpacing: 0.0,
           leading: new Container(
@@ -50,7 +69,10 @@ class _MyHomePageState extends State<MyHomePage> {
             padding: EdgeInsets.all(10.0),
             child: new InkWell(
               onTap: () {
-                Navigator.pushNamed(context, '/user');
+                // SharedPreferences.getInstance().then((prefs) {
+                //   prefs.remove('user');
+                // });
+                navigateTo(context, '/user', this.userProfile);
               },
               child: buildAvatar('', 40.0),
             )

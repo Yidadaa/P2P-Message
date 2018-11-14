@@ -152,8 +152,8 @@ class _LoginPageState extends State<LoginPage> {
                   print(res);
                   if (res['success']) {
                     final prefs = await SharedPreferences.getInstance();
-                    prefs.setString('user', jsonEncode(res));
-                    redirectTo(context, '/home', res);
+                    prefs.setString('user', jsonEncode(res['user']));
+                    redirectTo(context, '/home', res['user']);
                   }
                   setProcessing(false);
                 }

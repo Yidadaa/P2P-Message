@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import './pages/home.dart';
-import './pages/login.dart';
+import 'package:p2pmessage/pages/home.dart';
+import 'package:p2pmessage/pages/login.dart';
 
 void main() => runApp(new MyApp());
 
@@ -27,14 +27,13 @@ class LogicPage extends StatefulWidget {
   _LogicPageState createState() => new _LogicPageState();
 }
 
-class _LogicPageState extends State<LogicPage> {
+class _LogicPageState extends State<LogicPage> with WidgetsBindingObserver {
   bool hasLogin = false;
 
   @override
   void initState() {
     SharedPreferences.getInstance().then((prefs) {
       String userProfile = prefs.getString('user');
-      print(userProfile);
       setState(() {
         hasLogin = userProfile == null ? false : userProfile.isNotEmpty;
       });

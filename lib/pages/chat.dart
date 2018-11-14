@@ -1,7 +1,12 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:p2pmessage/utils/navigate.dart';
+import 'package:p2pmessage/utils/api.dart' as api;
+import 'package:shared_preferences/shared_preferences.dart';
+
 import './components/avatar.dart';
-import '../models/common_models.dart';
 
 class ChatPage extends StatefulWidget {
   ChatPage({Key key, this.params}) : super(key: key);
@@ -9,20 +14,40 @@ class ChatPage extends StatefulWidget {
   final Map params;
 
   @override
-  _ChatPageState createState() => new _ChatPageState();
+  _ChatPageState createState() => new _ChatPageState(params);
 }
 
 class _ChatPageState extends State<ChatPage> {
-  List<MessageModel> messages = [
-    new MessageModel("", "", "对方发的", "", "", "", "")
-  ];
+  List<Map> messages = [];
   final textController = TextEditingController();
+
+  Map toUserProfile;
+  Map myProfile;
+
+  _ChatPageState(Map toUserProfile) {
+    this.toUserProfile = toUserProfile;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    SharedPreferences.getInstance().then((prefs) {
+      String userProfileStr = prefs.getString('user');
+      if (userProfileStr == null) redirectTo(context, '/login', null);
+      else {
+        Map userProfileJson = jsonDecode(userProfileStr);
+        setState(() {
+          myProfile = userProfileJson;
+        });
+      }
+    });
+  }
 
   Widget buildChatMessages(BuildContext context) {
     return new ListView(
       reverse: true,
-      children: messages.map((MessageModel m) {
-        bool isme = m.from == "me";
+      children: messages.map((Map m) {
+        bool isme = m['from_userid'] == (myProfile == null ? 'me' : myProfile['id']);
         Widget message = new Flexible(
             child: new Align(
           alignment:
@@ -44,7 +69,7 @@ class _ChatPageState extends State<ChatPage> {
                         },
                       ),
                     );
-                    Clipboard.setData(new ClipboardData(text: m.content));
+                    Clipboard.setData(new ClipboardData(text: m['content']));
                     Scaffold.of(context).showSnackBar(s);
                   },
                   child: new Padding(
@@ -53,13 +78,13 @@ class _ChatPageState extends State<ChatPage> {
                       style: new TextStyle(
                           fontSize: 16.0,
                           color: isme ? Colors.white : Colors.black),
-                      child: new Text(m.content),
+                      child: new Text(m['content']),
                     ),
                   ),
                 )),
           ),
         ));
-        Widget avatar = buildAvatar(m.avatar, 50.0);
+        Widget avatar = buildAvatar(m['avatar'], 50.0);
         return new Row(
           children: [message],
         );
@@ -68,11 +93,19 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   void addMessage() {
+    String ts = new DateTime.now().millisecondsSinceEpoch.toString();
     String text = textController.text;
+    Map msg = {
+      'from_userid': myProfile['id'],
+      'to_userid': toUserProfile['id'],
+      'content': text,
+      'ts': ts
+    };
     if (text.length > 0) {
       setState(() {
-        messages.insert(0, new MessageModel("", "", text, "", "", "me", ""));
+        messages.insert(0, msg);
         textController.clear();
+        api.send(myProfile['id'], toUserProfile['id'], text, ts);
       });
     }
   }
@@ -86,13 +119,13 @@ class _ChatPageState extends State<ChatPage> {
           title: new Container(
             child: new DefaultTextStyle(
               style: new TextStyle(fontSize: 18.0, color: Colors.white),
-              child: new Text("许启迪"),
+              child: new Text(toUserProfile['name'] ?? ''),
             ),
           ),
           actions: <Widget>[
             new FlatButton(
               onPressed: () {
-                Navigator.pushNamed(context, "/user");
+                navigateTo(context, '/user', toUserProfile);
               },
               child: new Icon(
                 Icons.person,

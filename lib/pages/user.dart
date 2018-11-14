@@ -1,6 +1,12 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
-import './components/avatar.dart';
 import 'package:share/share.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:p2pmessage/utils/navigate.dart';
+import 'package:p2pmessage/utils/text.dart' as text;
+
+import './components/avatar.dart';
 
 class UserPage extends StatefulWidget {
   UserPage({Key key, this.params}) : super(key: key);
@@ -8,10 +14,31 @@ class UserPage extends StatefulWidget {
   final Map params;
 
   @override
-  _UserPageState createState() => new _UserPageState();
+  _UserPageState createState() => new _UserPageState(params);
 }
 
 class _UserPageState extends State<UserPage> {
+  Map userProfile;
+  bool isMe = false;
+
+  _UserPageState(Map params) {
+    userProfile = params;
+  }
+
+  @override
+  void initState() {
+    SharedPreferences.getInstance().then((prefs) {
+      String userProfileStr = prefs.getString('user');
+      if (userProfileStr == null) redirectTo(context, '/login', null);
+      else {
+        Map userProfileJson = jsonDecode(userProfileStr);
+        setState(() {
+          isMe = userProfile['id'] == userProfileJson['id'];
+        });
+      }
+    });
+  }
+
   Widget buildInfoList(String name, String value, Icon icon) {
     return new InkWell(
       onTap: () {},
@@ -58,7 +85,7 @@ class _UserPageState extends State<UserPage> {
                   leading: buildAvatar('', 50.0),
                   title: new DefaultTextStyle(
                     style: new TextStyle(color: Colors.white, fontSize: 18.0),
-                    child: new Text("已大大撒"),
+                    child: new Text(userProfile == null ? '' : userProfile['name']),
                   ),
                   subtitle: new DefaultTextStyle(
                     style: new TextStyle(color: Colors.white70, fontSize: 15.0),
@@ -74,21 +101,21 @@ class _UserPageState extends State<UserPage> {
               children: <Widget>[
                 this.buildInfoList(
                     "邮箱",
-                    "1234@qq.com",
+                    userProfile == null ? '' : userProfile['email'] ?? '无',
                     new Icon(
                       Icons.alternate_email,
                       size: 30.0,
                     )),
                 this.buildInfoList(
                     "ID",
-                    "sdfsedf222",
+                    userProfile == null ? '' : text.fillZero(userProfile['id'], 8),
                     new Icon(
                       Icons.code,
                       size: 30.0,
                     )),
                 this.buildInfoList(
                     "住址",
-                    "fsdf ",
+                    userProfile == null ? '' : userProfile['address'] ?? '无',
                     new Icon(
                       Icons.location_on,
                       size: 30.0,
@@ -100,12 +127,16 @@ class _UserPageState extends State<UserPage> {
           top: appBar.preferredSize.height - 5,
           child: new FloatingActionButton(
             onPressed: () {
-              Navigator.pushNamed(context, "/chat");
+              if (!isMe) {
+                navigateTo(context, '/chat', userProfile);
+              } else {
+                // do something
+              }
             },
             backgroundColor: Colors.white,
             elevation: 1.0,
             child: new Icon(
-              Icons.chat,
+              isMe ? Icons.edit : Icons.chat,
               color: Colors.blueGrey,
             ),
           ),

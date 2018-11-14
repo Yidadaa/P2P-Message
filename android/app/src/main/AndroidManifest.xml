@@ -14,7 +14,7 @@
          FlutterApplication and put your custom class here. -->
     <application
         android:name="io.flutter.app.FlutterApplication"
-        android:label="洞见密信"
+        android:label="洞间密信"
         android:icon="@mipmap/ic_launcher">
         <activity
             android:name=".MainActivity"
