@@ -26,7 +26,6 @@ class _LoginPageState extends State<LoginPage> {
       color: Colors.blueGrey
     );
 
-
     TextFormField user = new TextFormField(
       validator: (v) {
         if (v.isEmpty) {

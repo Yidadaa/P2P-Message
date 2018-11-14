@@ -20,6 +20,13 @@ class UserPage extends StatefulWidget {
 class _UserPageState extends State<UserPage> {
   Map userProfile;
   bool isMe = false;
+  bool isEdit = false;
+
+  Map<String, TextEditingController> textCs = {
+    'ID': new TextEditingController(),
+    '邮箱': new TextEditingController(),
+    '住址': new TextEditingController()
+  };
 
   _UserPageState(Map params) {
     userProfile = params;
@@ -27,9 +34,11 @@ class _UserPageState extends State<UserPage> {
 
   @override
   void initState() {
+    super.initState();
     SharedPreferences.getInstance().then((prefs) {
       String userProfileStr = prefs.getString('user');
-      if (userProfileStr == null) redirectTo(context, '/login', null);
+      if (userProfileStr == null)
+        redirectTo(context, '/login', null);
       else {
         Map userProfileJson = jsonDecode(userProfileStr);
         setState(() {
@@ -39,7 +48,19 @@ class _UserPageState extends State<UserPage> {
     });
   }
 
+  void toggleEdit(bool status) {
+    setState(() {
+      isEdit = status;
+    });
+  }
+
   Widget buildInfoList(String name, String value, Icon icon) {
+    if(textCs.containsKey(name)) {
+      textCs[name].text = value;
+    }
+
+    bool couldEdit = !(name == 'ID');
+
     return new InkWell(
       onTap: () {},
       child: new Container(
@@ -47,7 +68,18 @@ class _UserPageState extends State<UserPage> {
         decoration: new BoxDecoration(
             border:
                 Border(bottom: BorderSide(width: 0.5, color: Colors.black12))),
-        child: new ListTile(
+        child: (isEdit && couldEdit)
+          ? new ListTile(
+            leading: icon,
+            title: new TextField(
+              controller: textCs[name] ?? TextEditingController(),
+              decoration: InputDecoration(
+                hintText: value,
+                labelText: name
+              ),
+            ),
+          )
+          : new ListTile(
           leading: icon,
           title: new DefaultTextStyle(
             style: new TextStyle(fontSize: 16.0, color: Colors.grey),
@@ -66,15 +98,24 @@ class _UserPageState extends State<UserPage> {
   Widget build(BuildContext context) {
     const num appBarHeight = 100.0;
 
+    var id = userProfile == null ? '' : userProfile['id'];
+    var name = userProfile == null ? '' : userProfile['name'];
+
     AppBar appBar = new AppBar(
         title: new Text("个人主页"),
         elevation: 1.0,
         actions: <Widget>[
           new FlatButton(
             onPressed: () {
-              Share.share("来试试洞见密信吧，超安全的p2p聊天应用哦！我的洞见id：sfsdfdss，复制后打开洞见密信，就能加我为好友哦~");
+              Share.share(
+                isMe
+                ? "来试试洞见密信吧，超安全的p2p聊天应用哦！我的洞见id：$id，复制后打开洞见密信，就能加我为好友哦~"
+                : "向您分享洞见用户$name (洞见id：$id )，复制后打开洞见密信即可添加~");
             },
-            child: new Icon(Icons.share, color: Colors.white,),
+            child: new Icon(
+              Icons.share,
+              color: Colors.white,
+            ),
           )
         ],
         bottom: PreferredSize(
@@ -85,7 +126,8 @@ class _UserPageState extends State<UserPage> {
                   leading: buildAvatar('', 50.0),
                   title: new DefaultTextStyle(
                     style: new TextStyle(color: Colors.white, fontSize: 18.0),
-                    child: new Text(userProfile == null ? '' : userProfile['name']),
+                    child: new Text(
+                        userProfile == null ? '' : userProfile['name']),
                   ),
                   subtitle: new DefaultTextStyle(
                     style: new TextStyle(color: Colors.white70, fontSize: 15.0),
@@ -100,17 +142,19 @@ class _UserPageState extends State<UserPage> {
             body: new ListView(
               children: <Widget>[
                 this.buildInfoList(
+                    "ID",
+                    userProfile == null
+                        ? ''
+                        : text.fillZero(userProfile['id'], 8),
+                    new Icon(
+                      Icons.code,
+                      size: 30.0,
+                    )),
+                this.buildInfoList(
                     "邮箱",
                     userProfile == null ? '' : userProfile['email'] ?? '无',
                     new Icon(
                       Icons.alternate_email,
-                      size: 30.0,
-                    )),
-                this.buildInfoList(
-                    "ID",
-                    userProfile == null ? '' : text.fillZero(userProfile['id'], 8),
-                    new Icon(
-                      Icons.code,
                       size: 30.0,
                     )),
                 this.buildInfoList(
@@ -129,14 +173,43 @@ class _UserPageState extends State<UserPage> {
             onPressed: () {
               if (!isMe) {
                 navigateTo(context, '/chat', userProfile);
+              } else if (!isEdit) {
+                toggleEdit(true);
               } else {
-                // do something
+                // 弹窗确认
+                showDialog(
+                  context: context,
+                  barrierDismissible: true,
+                  builder: (BuildContext context) {
+                    return AlertDialog(
+                      title: Text('确认'),
+                      content: SingleChildScrollView(
+                        child: ListBody(
+                          children: <Widget>[
+                            Text('确认修改您的信息？')
+                          ],
+                        ),
+                      ),
+                      actions: <Widget>[
+                        FlatButton(child: Text('确认'), onPressed: () {
+                          // TODO: 发送请求
+                          Navigator.of(context).pop();
+                          toggleEdit(false);
+                        },),
+                        FlatButton(child: Text('算了'), onPressed: () {
+                          Navigator.of(context).pop();
+                          toggleEdit(false);
+                        },)
+                      ],
+                    );
+                  },
+                );
               }
             },
             backgroundColor: Colors.white,
             elevation: 1.0,
             child: new Icon(
-              isMe ? Icons.edit : Icons.chat,
+              isMe ? isEdit ? Icons.check : Icons.edit : Icons.chat,
               color: Colors.blueGrey,
             ),
           ),
