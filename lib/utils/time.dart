@@ -1,3 +1,5 @@
+import 'package:p2pmessage/utils/text.dart';
+
 String fromNow(int unixMills) {
   DateTime d = new DateTime.fromMillisecondsSinceEpoch(unixMills);
   DateTime now = new DateTime.now();
@@ -21,4 +23,22 @@ String fromNow(int unixMills) {
   }
 
   return formatedString;
+}
+
+String format(dynamic unixMills) {
+  DateTime d = new DateTime.fromMillisecondsSinceEpoch(int.parse(unixMills.toString()));
+  DateTime now = new DateTime.now();
+
+  String date = '';
+
+  if (d.year < now.year) {
+    date += fillZero(d.year, 4) + '-';
+  } else if (d.day < now.day) {
+    date += [fillZero(d.month, 2), fillZero(d.day, 2)].join('-') + ' ';
+  } else {
+    date += [d.hour, d.minute, d.second]
+      .map((f) => fillZero(f, 2)).toList().join(':');
+  }
+
+  return date;
 }

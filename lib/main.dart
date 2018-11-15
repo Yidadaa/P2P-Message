@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:p2pmessage/pages/home.dart';
 import 'package:p2pmessage/pages/login.dart';
+import 'package:p2pmessage/utils/api.dart' as api;
 
 void main() => runApp(new MyApp());
 
@@ -32,6 +33,7 @@ class _LogicPageState extends State<LogicPage> with WidgetsBindingObserver {
 
   @override
   void initState() {
+    api.initDB();
     SharedPreferences.getInstance().then((prefs) {
       String userProfile = prefs.getString('user');
       setState(() {

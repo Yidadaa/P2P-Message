@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:p2pmessage/utils/navigate.dart';
 import 'package:p2pmessage/utils/api.dart' as api;
+import 'package:p2pmessage/utils/time.dart' as time;
 
 import './components/avatar.dart';
 
@@ -17,7 +18,7 @@ class MessagePage extends StatefulWidget {
 }
 
 class _MessagePageState extends State<MessagePage> {
-  List<Map> messages = [];
+  List messages = [];
 
   PersistentBottomSheetController c;
   Map myProfile;
@@ -59,7 +60,7 @@ class _MessagePageState extends State<MessagePage> {
       },
       child: new ListView(
         shrinkWrap: true,
-        children: this.messages.map((Map m) {
+        children: this.messages.map((m) {
           return new InkWell(
               onTap: () {
                 try {
@@ -94,13 +95,13 @@ class _MessagePageState extends State<MessagePage> {
                     subtitle: new DefaultTextStyle(
                       style: new TextStyle(fontSize: 14.0, color: Colors.grey),
                       child: new Text(
-                        m['content'],
+                        m['latestMsgContent'],
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     trailing: new DefaultTextStyle(
                       style: new TextStyle(fontSize: 10.0, color: Colors.grey),
-                      child: new Text('一小时前'),
+                      child: new Text(time.format(m['latestMsgTs'])),
                     ),
                   )));
         }).toList(),
