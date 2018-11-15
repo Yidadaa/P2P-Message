@@ -5,6 +5,7 @@ import 'package:share/share.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:p2pmessage/utils/navigate.dart';
 import 'package:p2pmessage/utils/text.dart' as text;
+import 'package:p2pmessage/utils/time.dart' as time;
 
 import './components/avatar.dart';
 
@@ -18,7 +19,7 @@ class UserPage extends StatefulWidget {
 }
 
 class _UserPageState extends State<UserPage> {
-  Map userProfile;
+  Map userProfile = {};
   bool isMe = false;
   bool isEdit = false;
 
@@ -100,6 +101,9 @@ class _UserPageState extends State<UserPage> {
 
     var id = userProfile == null ? '' : userProfile['id'];
     var name = userProfile == null ? '' : userProfile['name'];
+    var statusText = (userProfile['status'] ?? 0) == 0
+      ? time.fromNow(userProfile['last_online'] ?? 0) + '在线'
+      : '当前在线';
 
     AppBar appBar = new AppBar(
         title: new Text("个人主页"),
@@ -131,7 +135,7 @@ class _UserPageState extends State<UserPage> {
                   ),
                   subtitle: new DefaultTextStyle(
                     style: new TextStyle(color: Colors.white70, fontSize: 15.0),
-                    child: new Text("几分钟前在线"),
+                    child: new Text(statusText),
                   ),
                 ))));
 

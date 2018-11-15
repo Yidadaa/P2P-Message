@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart'as http;
 
-final String host = "http://192.168.1.103:80";
+final String host = "http://192.168.1.100:80";
 
 // 通用post方法
 post(String path, Map params) async {
@@ -40,7 +40,9 @@ collectMessages(int userid) async {
           'avatar': m['user']['avatar'],
           'name': m['user']['name'],
           'address': m['user']['address'],
-          'email': m['user']['email']
+          'email': m['user']['email'],
+          'last_online': m['user']['last_online'],
+          'status': m['user']['status']
         }
       };
     }).toList();
@@ -50,7 +52,7 @@ collectMessages(int userid) async {
 
 collectContacts(int userid) async {
   var res = await post('/contacts', { 'userid': userid.toString() });
-  List<String> keys = ['id', 'name', 'avatar', 'address', 'email'];
+  List<String> keys = ['id', 'name', 'avatar', 'address', 'email', 'last_online', 'status'];
   if (res['success']) {
     List ms = res['data'];
     return ms.map((m) {
