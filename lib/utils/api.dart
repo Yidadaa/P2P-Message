@@ -3,11 +3,11 @@ import 'package:http/http.dart'as http;
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
-final String host = "http://192.168.1.100:80";
+final String host = "http://113.54.209.21:80";
 Database db;
 
 // 初始化数据库
-void initDB() async {
+Future initDB() async {
   var dbPath = await getDatabasesPath();
   dbPath = join(dbPath, 'app.db');
 
@@ -35,8 +35,26 @@ void initDB() async {
         );
         """
       );
+      await dataBase.execute(
+        """
+        CREATE TABLE CONTACTS (
+            id          INTEGER      PRIMARY KEY ASC AUTOINCREMENT
+                                    UNIQUE
+                                    NOT NULL,
+            name        TEXT (50)    NOT NULL
+                                    UNIQUE,
+            address     TEXT (10),
+            avatar      CHAR (50)    DEFAULT default_avatar,
+            email       CHAR (20),
+            last_online INTEGER,
+            status      INTEGER
+        );
+        """
+      );
     }
   );
+
+  return;
 }
 
 // 通用post方法
@@ -65,61 +83,22 @@ signin(String username, String pwd) async {
 collectMessages(int userid) async {
   var res = await post('/messages', { 'userid': userid.toString() });
 
-  Map unReadMap = {};
-  List unReadList = [];
-  List toMergeList = [];
-
   if (res['success']) {
     List ms = res['data'];
 
-    for (var m in ms) {
-      toMergeList.add([m['id'], m['user']['id'], userid, m['content'], m['ts']]);
-
-      if (unReadMap.containsKey(m['user']['id'])) {
-        unReadMap[m['user']['id']]['latestMsgContent'] = m['content'];
-        unReadMap[m['user']['id']]['latestMsgTs'] = m['ts'];
-        unReadMap[m['user']['id']]['unReadCount'] ++;
-      } else {
-        unReadMap[m['user']['id']] = Map<String, dynamic>.from({
-          'user': {
-            'id': m['user']['id'],
-            'avatar': m['user']['avatar'],
-            'name': m['user']['name'],
-            'address': m['user']['address'],
-            'email': m['user']['email'],
-            'last_online': m['user']['last_online'],
-            'status': m['user']['status']
-          },
-          'latestMsgContent': m['content'],
-          'latestMsgTs': m['ts'],
-          'unReadCount': 1
-        });
-      }
-    }
-    // 将数据保存到本地数据库
-    mergeMessageToDB(toMergeList);
-    // 将map中的数组取出来
-    for (var key in unReadMap.keys) {
-      unReadList.add(unReadMap[key]);
-    }
-    unReadList.sort((a, b) => b['latestMsgTs'] - a['latestMsgTs']);
+    // 将消息同步到本地数据库
+    await mergeMessageToDB(ms);
   }
-
-  return unReadList;
+  // 从本地数据库拉取最近的消息
+  return await collectRecentMessageFromDB(userid);
 }
 
 collectContacts(int userid) async {
   var res = await post('/contacts', { 'userid': userid.toString() });
-  List<String> keys = ['id', 'name', 'avatar', 'address', 'email', 'last_online', 'status'];
   if (res['success']) {
-    List ms = res['data'];
-    return ms.map((m) {
-      Map u = {};
-      for (var k in keys) {
-        u[k] = m[k];
-      }
-      return u;
-    }).toList();
+    List contactList = res['data'];
+    await mergeContactToDB(contactList);
+    return await collectContactFromDB();
   }
   return [];
 }
@@ -140,6 +119,50 @@ send(int fromUserid, int toUserid, String content, String ts) async {
   return res['success'];
 }
 
+collectRecentMessageFromDB(int userid) async {
+  Map unReadMap = {};
+  List unReadList = [];
+
+  List ms = await db.rawQuery(
+    """
+    SELECT m.id, m.status, m.content, m.ts, u.id as uid, u.name as uname, u.avatar, u.address, u.email, u.last_online, u.status as ustatus
+          FROM MESSAGE AS m INNER JOIN CONTACTS as u
+          ON m.to_userid = $userid OR m.from_userid = $userid
+    """
+  );
+  // 将原始的数据加工成所需的数据
+  for (var m in ms) {
+    var uid = m['uid'];
+    if (unReadMap.containsKey(uid)) {
+      unReadMap[uid]['latestMsgContent'] = m['content'];
+      unReadMap[uid]['latestMsgTs'] = m['ts'] > unReadMap[uid]['latestMsgTs'] ? m['ts'] : unReadMap[uid]['latestMsgTs'];
+      unReadMap[uid]['unReadCount'] ++;
+    } else {
+      unReadMap[m['uid']] = Map<String, dynamic>.from({
+        'user': {
+          'id': m['uid'],
+          'avatar': m['avatar'],
+          'name': m['uname'],
+          'address': m['address'],
+          'email': m['email'],
+          'last_online': m['last_online'],
+          'status': m['ustatus']
+        },
+        'latestMsgContent': m['content'],
+        'latestMsgTs': m['ts'],
+        'unReadCount': 1
+      });
+    }
+  }
+  // 将map中的数组取出来
+  for (var key in unReadMap.keys) {
+    unReadList.add(unReadMap[key]);
+  }
+  unReadList.sort((a, b) => b['latestMsgTs'] - a['latestMsgTs']);
+
+  return unReadList;
+}
+
 collectMessageFromDB(int userid) async {
   // 从本地数据库中读取聊天记录
   List<Map> list = await db.rawQuery(
@@ -151,15 +174,33 @@ collectMessageFromDB(int userid) async {
   return list.map((m) => new Map<String, dynamic>.from(m)).toList();
 }
 
+collectContactFromDB() async {
+  // 从本地数据库中读取联系人
+  List<Map> list = await db.rawQuery('SELECT * FROM CONTACTS');
+  return list.map((m) => new Map<String, dynamic>.from(m)).toList();
+}
+
 mergeMessageToDB(List msgs) async {
   // 将未读消息合并到本地数据库
   var sql = '''
-    INSERT OR REPLACE INTO MESSAGE (id, from_userid, to_userid, content, ts)
-    VALUES (?, ?, ?, ?, ?)
+    INSERT OR REPLACE INTO MESSAGE (id, from_userid, to_userid, status, content, ts)
+    VALUES (?, ?, ?, ?, ?, ?)
   ''';
   var batch = db.batch();
   for (var msg in msgs) {
     batch.rawInsert(sql, msg);
+  }
+  await batch.commit();
+}
+
+mergeContactToDB(List contacts) async {
+  var sql = '''
+    INSERT OR REPLACE INTO CONTACTS (id, name, avatar, address, email, last_online, status)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  ''';
+  var batch = db.batch();
+  for (var contact in contacts) {
+    batch.rawInsert(sql, contact);
   }
   await batch.commit();
 }

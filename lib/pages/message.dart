@@ -101,7 +101,7 @@ class _MessagePageState extends State<MessagePage> {
                     ),
                     trailing: new DefaultTextStyle(
                       style: new TextStyle(fontSize: 10.0, color: Colors.grey),
-                      child: new Text(time.format(m['latestMsgTs'])),
+                      child: new Text(time.format(m['latestMsgTs']) ?? new DateTime.now()),
                     ),
                   )));
         }).toList(),

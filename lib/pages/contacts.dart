@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:p2pmessage/utils/navigate.dart';
 import 'package:p2pmessage/utils/api.dart' as api;
+import 'package:p2pmessage/utils/time.dart' as time;
 
 import './components/avatar.dart';
 
@@ -31,17 +32,18 @@ class _ContactsPageState extends State<ContactsPage>
 
   void loadContacts() async {
     if (myProfile == null) return;
-    List contacts = await api.collectContacts(myProfile['id']);
-    setState(() {
-      this.friends = contacts;
-    });
-    this.groupFriends();
+    // 优先从本地数据库拉取数据
+    List contacts = await api.collectContactFromDB();
+    this.updateContact(contacts);
+    // 然后从远程数据库拉取数据到本地
+    contacts = await api.collectContacts(myProfile['id']);
+    this.updateContact(contacts);
   }
 
-  void groupFriends() {
+  void updateContact(List contacts) {
     Map<String, List<Map>> newGroup = {};
 
-    for (var f in friends) {
+    for (var f in contacts) {
       var name = f['name'];
       if (name.length > 0) {
         if (newGroup.containsKey(name[0])) {
@@ -53,6 +55,7 @@ class _ContactsPageState extends State<ContactsPage>
     }
 
     setState(() {
+      friends = contacts;
       friendGroup = newGroup;
       sortedKeys = newGroup.keys.toList()..sort();
     });
@@ -79,7 +82,10 @@ class _ContactsPageState extends State<ContactsPage>
             ),
             subtitle: new DefaultTextStyle(
               style: new TextStyle(fontSize: 14.0, color: Colors.grey),
-              child: new Text('几小时前'),
+              child: new Text(
+                f['status'] == 1
+                ? '当前在线'
+                : '上次在线' + time.format(f['last_online'] ?? new DateTime.now().millisecondsSinceEpoch)),
             ),
           ),
         );

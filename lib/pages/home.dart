@@ -36,6 +36,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
 
   @override
   void initState() {
+    super.initState();
     SharedPreferences.getInstance().then((prefs) {
       String userProfileStr = prefs.getString('user');
       if (userProfileStr == null) redirectTo(context, '/login', null);

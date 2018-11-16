@@ -31,15 +31,20 @@ class LogicPage extends StatefulWidget {
 class _LogicPageState extends State<LogicPage> with WidgetsBindingObserver {
   bool hasLogin = false;
 
-  @override
-  void initState() {
-    api.initDB();
+  void firstStart() async {
+    await api.initDB();
     SharedPreferences.getInstance().then((prefs) {
       String userProfile = prefs.getString('user');
       setState(() {
         hasLogin = userProfile == null ? false : userProfile.isNotEmpty;
       });
     });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    this.firstStart();
   }
 
   @override
