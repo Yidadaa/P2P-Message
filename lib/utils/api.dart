@@ -127,16 +127,20 @@ collectRecentMessageFromDB(int userid) async {
     """
     SELECT m.id, m.status, m.content, m.ts, u.id as uid, u.name as uname, u.avatar, u.address, u.email, u.last_online, u.status as ustatus
           FROM MESSAGE AS m INNER JOIN CONTACTS as u
-          ON m.to_userid = $userid OR m.from_userid = $userid
+          ON (m.to_userid = $userid AND m.from_userid = u.id)
+          OR (m.from_userid = $userid AND m.to_userid = u.id)
     """
   );
   // 将原始的数据加工成所需的数据
   for (var m in ms) {
     var uid = m['uid'];
+    bool isUnRead = uid != userid && m['status'] == 1;
     if (unReadMap.containsKey(uid)) {
       unReadMap[uid]['latestMsgContent'] = m['content'];
       unReadMap[uid]['latestMsgTs'] = m['ts'] > unReadMap[uid]['latestMsgTs'] ? m['ts'] : unReadMap[uid]['latestMsgTs'];
-      unReadMap[uid]['unReadCount'] ++;
+      if (isUnRead) {
+        unReadMap[uid]['unReadCount'] ++;
+      }
     } else {
       unReadMap[m['uid']] = Map<String, dynamic>.from({
         'user': {
@@ -150,7 +154,7 @@ collectRecentMessageFromDB(int userid) async {
         },
         'latestMsgContent': m['content'],
         'latestMsgTs': m['ts'],
-        'unReadCount': 1
+        'unReadCount': isUnRead ? 1 : 0
       });
     }
   }

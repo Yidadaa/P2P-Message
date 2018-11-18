@@ -101,7 +101,28 @@ class _MessagePageState extends State<MessagePage> {
                     ),
                     trailing: new DefaultTextStyle(
                       style: new TextStyle(fontSize: 10.0, color: Colors.grey),
-                      child: new Text(time.format(m['latestMsgTs']) ?? new DateTime.now()),
+                      child: new Column(
+                        children: <Widget>[
+                          new ClipRRect(
+                            borderRadius: BorderRadius.circular(20.0),
+                            child: new Container(
+                              padding: EdgeInsets.only(bottom: 5.0),
+                              // color: Colors.blueGrey,
+                              child: DefaultTextStyle(
+                                style: TextStyle(
+                                  color: Colors.blueGrey,
+                                  fontSize: 14.0
+                                ),
+                                child: new Text(
+                                  m['unReadCount'] > 0
+                                  ? m['unReadCount'].toString() + '条未读'
+                                  : '', textAlign: TextAlign.center,),
+                              ),
+                            ),
+                          ),
+                          new Text(time.format(m['latestMsgTs']) ?? new DateTime.now())
+                        ],
+                      ),
                     ),
                   )));
         }).toList(),
