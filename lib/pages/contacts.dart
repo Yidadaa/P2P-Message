@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:lpinyin/lpinyin.dart';
 import 'package:p2pmessage/utils/navigate.dart';
 import 'package:p2pmessage/utils/api.dart' as api;
 import 'package:p2pmessage/utils/time.dart' as time;
@@ -44,12 +45,14 @@ class _ContactsPageState extends State<ContactsPage>
     Map<String, List<Map>> newGroup = {};
 
     for (var f in contacts) {
-      var name = f['name'];
+      // 根据拼音首字母将联系人分组
+      var name = PinyinHelper.convertToPinyinStringWithoutException(f['name']);
       if (name.length > 0) {
-        if (newGroup.containsKey(name[0])) {
-          newGroup[name[0]].add(f);
+        String superKey = name[0].toUpperCase();
+        if (newGroup.containsKey(superKey)) {
+          newGroup[superKey].add(f);
         } else {
-          newGroup[name[0]] = [f];
+          newGroup[superKey] = [f];
         }
       }
     }
