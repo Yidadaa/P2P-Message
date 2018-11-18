@@ -33,12 +33,12 @@ String format(dynamic unixMills) {
 
   if (d.year < now.year) {
     date += fillZero(d.year, 4) + '-';
-  } else if (d.day < now.day) {
-    date += [fillZero(d.month, 2), fillZero(d.day, 2)].join('-') + ' ';
-  } else {
-    date += [d.hour, d.minute, d.second]
-      .map((f) => fillZero(f, 2)).toList().join(':');
   }
+  if (d.day < now.day) {
+    date += [fillZero(d.month, 2), fillZero(d.day, 2)].join('-');
+  }
+  date += ' ' + [d.hour, d.minute]
+    .map((f) => fillZero(f, 2)).toList().join(':');
 
   return date;
 }
