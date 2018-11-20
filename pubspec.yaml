@@ -24,6 +24,7 @@ dependencies:
   sqflite: any
   shared_preferences: ^0.4.3
   lpinyin: any
+  image_picker: any
 
 dev_dependencies:
   flutter_test:

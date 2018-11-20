@@ -3,7 +3,10 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:share/share.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:image_picker/image_picker.dart';
+
 import 'package:p2pmessage/utils/navigate.dart';
+import 'package:p2pmessage/utils/api.dart' as api;
 import 'package:p2pmessage/utils/text.dart' as text;
 import 'package:p2pmessage/utils/time.dart' as time;
 
@@ -23,11 +26,9 @@ class _UserPageState extends State<UserPage> {
   bool isMe = false;
   bool isEdit = false;
 
-  Map<String, TextEditingController> textCs = {
-    'ID': new TextEditingController(),
-    '邮箱': new TextEditingController(),
-    '住址': new TextEditingController()
-  };
+  String avatar;
+  String address;
+  String email;
 
   _UserPageState(Map params) {
     userProfile = params;
@@ -44,6 +45,9 @@ class _UserPageState extends State<UserPage> {
         Map userProfileJson = jsonDecode(userProfileStr);
         setState(() {
           isMe = userProfile['id'] == userProfileJson['id'];
+          email = userProfile['email'];
+          address = userProfile['address'];
+          avatar = userProfile['avatar'];
         });
       }
     });
@@ -55,11 +59,22 @@ class _UserPageState extends State<UserPage> {
     });
   }
 
-  Widget buildInfoList(String name, String value, Icon icon) {
-    if(textCs.containsKey(name)) {
-      textCs[name].text = value;
-    }
+  void updateAvatar(String avatar) {
+    setState(() {
+      this.avatar = avatar;
+    });
+    print(avatar);
+  }
 
+  void updateProfile() {
+    setState(() {
+      userProfile['email'] = email;
+      userProfile['address'] = address;
+      userProfile['avatar'] = avatar;
+      print(userProfile);
+    });
+  }
+  Widget buildInfoList(String name, String value, Icon icon) {
     bool couldEdit = !(name == 'ID');
 
     return new InkWell(
@@ -73,7 +88,14 @@ class _UserPageState extends State<UserPage> {
           ? new ListTile(
             leading: icon,
             title: new TextField(
-              controller: textCs[name] ?? TextEditingController(),
+              controller: new TextEditingController(text: value),
+              onChanged: (v) {
+                if (name == 'email') {
+                  this.email = v;
+                } else {
+                  this.address = v;
+                }
+              },
               decoration: InputDecoration(
                 hintText: value,
                 labelText: name
@@ -127,7 +149,19 @@ class _UserPageState extends State<UserPage> {
             child: new Container(
                 padding: EdgeInsets.only(bottom: 20.0),
                 child: new ListTile(
-                  leading: buildAvatar('', 50.0),
+                  leading: InkWell(
+                    child: buildAvatar(avatar ?? '', 50.0),
+                    onTap: () async {
+                      if (!isMe) return;
+                      var image = await ImagePicker.pickImage(source: ImageSource.gallery);
+                      var res = await api.uploadImg(userProfile['id'], image);
+                      if (res['success']) {
+                        this.updateAvatar(res['img_url']);
+                      } else {
+                        print('出错了: ' + res['msg']);
+                      }
+                    },
+                  ),
                   title: new DefaultTextStyle(
                     style: new TextStyle(color: Colors.white, fontSize: 18.0),
                     child: new Text(
@@ -155,14 +189,14 @@ class _UserPageState extends State<UserPage> {
                       size: 30.0,
                     )),
                 this.buildInfoList(
-                    "邮箱",
+                    "email",
                     userProfile == null ? '' : userProfile['email'] ?? '无',
                     new Icon(
                       Icons.alternate_email,
                       size: 30.0,
                     )),
                 this.buildInfoList(
-                    "住址",
+                    "address",
                     userProfile == null ? '' : userProfile['address'] ?? '无',
                     new Icon(
                       Icons.location_on,
@@ -195,9 +229,19 @@ class _UserPageState extends State<UserPage> {
                         ),
                       ),
                       actions: <Widget>[
-                        FlatButton(child: Text('确认'), onPressed: () {
+                        FlatButton(child: Text('确认'), onPressed: () async {
                           // TODO: 发送请求
-                          Navigator.of(context).pop();
+                          var res = await api.updateUser(userProfile['id'], {
+                            'email': email,
+                            'address': address,
+                            'avatar': avatar
+                          });
+                          if (res['success']) {
+                            this.updateProfile();
+                            Navigator.of(context).pop();
+                          } else {
+                            print('出错了');
+                          }
                           toggleEdit(false);
                         },),
                         FlatButton(child: Text('算了'), onPressed: () {

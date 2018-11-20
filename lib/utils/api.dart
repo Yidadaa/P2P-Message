@@ -1,9 +1,10 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart'as http;
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
-final String host = "http://113.54.209.21:80";
+final String host = "http://192.168.1.101:80";
 Database db;
 
 // 初始化数据库
@@ -117,6 +118,29 @@ send(int fromUserid, int toUserid, String content, String ts) async {
   }
 
   return res['success'];
+}
+
+uploadImg(int userid, File image) async {
+  var request = http.MultipartRequest('POST', Uri.parse(host + '/upload-img'));
+  request.fields['userid'] = userid.toString();
+  request.files.add(await http.MultipartFile.fromPath('img', image.path));
+  var resp = await request.send();
+  try {
+    var res = jsonDecode(await resp.stream.bytesToString());
+    if (res['success']) {
+      res['img_url'] = host + '/avatar/' + res['img_url'];
+    }
+    return res;
+  } catch (e) {
+    return e;
+  }
+}
+
+updateUser(int userid, Map userInfo) async {
+  return await post('/update-user', {
+    'userid': userid.toString(),
+    'user_info': json.encode(userInfo)
+  });
 }
 
 collectRecentMessageFromDB(int userid) async {
