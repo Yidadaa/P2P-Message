@@ -66,6 +66,14 @@ class _UserPageState extends State<UserPage> {
     print(avatar);
   }
 
+  void onShare() {
+    var id = userProfile == null ? '' : userProfile['id'];
+    var name = userProfile == null ? '' : userProfile['name'];
+    Share.share(isMe
+        ? "来试试洞见密信吧，超安全的p2p聊天应用哦！我的洞见id：$id，复制后打开洞见密信，就能加我为好友哦~"
+        : "向您分享洞见用户$name (洞见id：$id )，复制后打开洞见密信即可添加~");
+  }
+
   void updateProfile() {
     setState(() {
       userProfile['email'] = email;
@@ -74,6 +82,7 @@ class _UserPageState extends State<UserPage> {
       print(userProfile);
     });
   }
+
   Widget buildInfoList(String name, String value, Icon icon) {
     bool couldEdit = !(name == 'ID');
 
@@ -85,34 +94,31 @@ class _UserPageState extends State<UserPage> {
             border:
                 Border(bottom: BorderSide(width: 0.5, color: Colors.black12))),
         child: (isEdit && couldEdit)
-          ? new ListTile(
-            leading: icon,
-            title: new TextField(
-              controller: new TextEditingController(text: value),
-              onChanged: (v) {
-                if (name == 'email') {
-                  this.email = v;
-                } else {
-                  this.address = v;
-                }
-              },
-              decoration: InputDecoration(
-                hintText: value,
-                labelText: name
+            ? new ListTile(
+                leading: icon,
+                title: new TextField(
+                  controller: new TextEditingController(text: value),
+                  onChanged: (v) {
+                    if (name == 'email') {
+                      this.email = v;
+                    } else {
+                      this.address = v;
+                    }
+                  },
+                  decoration: InputDecoration(hintText: value, labelText: name),
+                ),
+              )
+            : new ListTile(
+                leading: icon,
+                title: new DefaultTextStyle(
+                  style: new TextStyle(fontSize: 16.0, color: Colors.grey),
+                  child: new Text(name),
+                ),
+                subtitle: new DefaultTextStyle(
+                  style: new TextStyle(fontSize: 20.0, color: Colors.black54),
+                  child: new Text(value),
+                ),
               ),
-            ),
-          )
-          : new ListTile(
-          leading: icon,
-          title: new DefaultTextStyle(
-            style: new TextStyle(fontSize: 16.0, color: Colors.grey),
-            child: new Text(name),
-          ),
-          subtitle: new DefaultTextStyle(
-            style: new TextStyle(fontSize: 20.0, color: Colors.black54),
-            child: new Text(value),
-          ),
-        ),
       ),
     );
   }
@@ -121,26 +127,35 @@ class _UserPageState extends State<UserPage> {
   Widget build(BuildContext context) {
     const num appBarHeight = 100.0;
 
-    var id = userProfile == null ? '' : userProfile['id'];
-    var name = userProfile == null ? '' : userProfile['name'];
     var statusText = (userProfile['status'] ?? 0) == 0
-      ? time.fromNow(userProfile['last_online'] ?? 0) + '在线'
-      : '当前在线';
+        ? time.fromNow(userProfile['last_online'] ?? 0) + '在线'
+        : '当前在线';
 
     AppBar appBar = new AppBar(
         title: new Text("个人主页"),
         elevation: 1.0,
         actions: <Widget>[
-          new FlatButton(
-            onPressed: () {
-              Share.share(
-                isMe
-                ? "来试试洞见密信吧，超安全的p2p聊天应用哦！我的洞见id：$id，复制后打开洞见密信，就能加我为好友哦~"
-                : "向您分享洞见用户$name (洞见id：$id )，复制后打开洞见密信即可添加~");
+          new InkWell(
+            onTap: onShare,
+            child: new Padding(
+              padding: EdgeInsets.only(right: 20.0),
+              child: new Icon(
+                Icons.share,
+                color: Colors.white,
+              ),
+            ),
+          ),
+          new InkWell(
+            onTap: () async {
+              await api.logout();
+              redirectTo(context, '/login', null);
             },
-            child: new Icon(
-              Icons.share,
-              color: Colors.white,
+            child: new Padding(
+              padding: EdgeInsets.only(right: 20.0),
+              child: new Icon(
+                Icons.exit_to_app,
+                color: Colors.white,
+              ),
             ),
           )
         ],
@@ -153,7 +168,8 @@ class _UserPageState extends State<UserPage> {
                     child: buildAvatar(avatar ?? '', 50.0),
                     onTap: () async {
                       if (!isMe) return;
-                      var image = await ImagePicker.pickImage(source: ImageSource.gallery);
+                      var image = await ImagePicker.pickImage(
+                          source: ImageSource.gallery);
                       var res = await api.uploadImg(userProfile['id'], image);
                       if (res['success']) {
                         this.updateAvatar(res['img_url']);
@@ -223,31 +239,35 @@ class _UserPageState extends State<UserPage> {
                       title: Text('确认'),
                       content: SingleChildScrollView(
                         child: ListBody(
-                          children: <Widget>[
-                            Text('确认修改您的信息？')
-                          ],
+                          children: <Widget>[Text('确认修改您的信息？')],
                         ),
                       ),
                       actions: <Widget>[
-                        FlatButton(child: Text('确认'), onPressed: () async {
-                          // TODO: 发送请求
-                          var res = await api.updateUser(userProfile['id'], {
-                            'email': email,
-                            'address': address,
-                            'avatar': avatar
-                          });
-                          if (res['success']) {
-                            this.updateProfile();
+                        FlatButton(
+                          child: Text('确认'),
+                          onPressed: () async {
+                            // TODO: 发送请求
+                            var res = await api.updateUser(userProfile['id'], {
+                              'email': email,
+                              'address': address,
+                              'avatar': avatar
+                            });
+                            if (res['success']) {
+                              this.updateProfile();
+                              Navigator.of(context).pop();
+                            } else {
+                              print('出错了');
+                            }
+                            toggleEdit(false);
+                          },
+                        ),
+                        FlatButton(
+                          child: Text('算了'),
+                          onPressed: () {
                             Navigator.of(context).pop();
-                          } else {
-                            print('出错了');
-                          }
-                          toggleEdit(false);
-                        },),
-                        FlatButton(child: Text('算了'), onPressed: () {
-                          Navigator.of(context).pop();
-                          toggleEdit(false);
-                        },)
+                            toggleEdit(false);
+                          },
+                        )
                       ],
                     );
                   },

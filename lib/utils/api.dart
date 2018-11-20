@@ -1,18 +1,28 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:http/http.dart'as http;
-import 'package:path/path.dart';
+import 'dart:async';
+
+
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
 
+import 'package:http/http.dart' as http;
+import 'package:path/path.dart';
+
+import 'package:p2pmessage/utils/udp.dart';
+
 final String host = "http://192.168.1.101:80";
+final String udpSendPort = '1234';
+final String udpRecvPort = '4321';
+
 Database db;
+Map userProfile;
+P2PClient client = P2PClient();
 
 // 初始化数据库
 Future initDB() async {
   var dbPath = await getDatabasesPath();
   dbPath = join(dbPath, 'app.db');
-
-  await deleteDatabase(dbPath);
 
   db = await openDatabase(
     dbPath,
@@ -55,7 +65,34 @@ Future initDB() async {
     }
   );
 
+  // syncDataFromServerWithLoop();
+
   return;
+}
+
+// 同步数据
+syncDataFromServerWithLoop() {
+  new Timer.periodic(new Duration(seconds: 5), (t) {
+    print('looping');
+  });
+}
+
+Future prepareUserProfile() async {
+  SharedPreferences.getInstance().then((prefs) {
+    // 从本地加载
+    String localUserProfile = prefs.getString('user');
+    if (localUserProfile == null) {
+      return false;
+    }
+
+    try {
+      Map localUserProfileMap = jsonDecode(localUserProfile);
+      userProfile = localUserProfileMap;
+      return true;
+    } catch (e) {
+      return false;
+    }
+  });
 }
 
 // 通用post方法
@@ -140,6 +177,52 @@ updateUser(int userid, Map userInfo) async {
   return await post('/update-user', {
     'userid': userid.toString(),
     'user_info': json.encode(userInfo)
+  });
+}
+
+// 退出登录
+logout() async {
+  var prefs = await SharedPreferences.getInstance();
+  prefs.remove('user');
+
+  var dbPath = await getDatabasesPath();
+  dbPath = join(dbPath, 'app.db');
+
+  await deleteDatabase(dbPath);
+
+  return;
+}
+
+// 发起p2p连接,向服务器注册信息
+startConnection(int userid, int touserid) async {
+  var res = await post('/update-connection/start', {
+    'from_uid': userid.toString(),
+    'from_port': udpSendPort.toString(),
+    'to_uid': touserid.toString().toString()
+  });
+
+  return res;
+}
+
+// 获取连接状态
+fetchConnection(int cid) async {
+  return await post('/update-connection/fetch', {
+    'cid': cid.toString()
+  });
+}
+
+// 同意对方发起的连接请求
+replyConnection(int cid) async {
+  return await post('/update-connection/reply', {
+    'cid': cid.toString(),
+    'to_port': udpRecvPort.toString()
+  });
+}
+
+// 尝试连接后,向服务器通知
+tryConnection(int cid) async {
+  return await post('/update-connection/reply', {
+    'cid': cid.toString()
   });
 }
 
